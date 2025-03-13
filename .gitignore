@@ -1,4 +1,8 @@
 node_modules
 build
+dist
 .env
 test-dir
+mcp_client*
+llms-full.txt
+SDK-README.md
