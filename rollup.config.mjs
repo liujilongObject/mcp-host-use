@@ -26,7 +26,6 @@ export default defineConfig([
       commonjs(),
       typescript({
         tsconfig: './tsconfig.json',
-        exclude: ['node_modules/**'],
       }),
       json(),
       terser(),
