@@ -1,64 +1,85 @@
-import express, { Request, Response } from 'express'
-import { MCPClient } from './index.js'
+import express, { Request, Response, NextFunction } from 'express'
+import { MCPClient } from './client.js'
 
-const PORT = 36003
 const app = express()
 
-let _mcpClient: MCPClient
+let allConnections: Map<string, MCPClient>
 
-app.get('/list-tools', async (req: Request, res: Response) => {
-  try {
-    const tools = await _mcpClient.listTools()
-    const toolNames = tools?.map((tool) => tool.function.name)
-    res.send({
-      code: 0,
-      data: toolNames
-    })
-  } catch (error) {
-    console.error('Failed to list tools:', error)
-    res.status(500).send({
-      code: 1,
-      message: 'Failed to list tools'
-    })
-  }
+let allClients: MCPClient[]
+
+// 解析JSON请求体
+app.use(express.json())
+
+// 统一设置响应 content-type为application/json
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Content-Type', 'application/json')
+  next()
 })
 
-app.get('/list-resources', async (req: Request, res: Response) => {
+// 统一错误响应处理中间件
+const errorHandler = (fn: Function) => async (req: Request, res: Response) => {
   try {
-    const resources = await _mcpClient.listResources()
-    res.send({
-      code: 0,
-      data: resources
-    })
+    await fn(req, res)
   } catch (error) {
-    console.error('Failed to list resources:', error)
-    res.status(500).send({
+    console.error(`请求失败: ${req.method} ${req.path}`, error)
+    res.status(500).json({
       code: 1,
-      message: 'Failed to list resources'
+      message: `请求失败: ${error instanceof Error ? error.message : '未知错误'}`
     })
   }
-})
+}
 
-app.post('/call-tool', async (req: Request, res: Response) => {
-  try {
-    const { toolName, toolArgs } = req.body
-    const result = await _mcpClient.callTool(toolName, toolArgs)
-    res.send({
-      code: 0,
-      data: result
-    })
-  } catch (error) {
-    console.error('Failed to call tool:', error)
-    res.status(500).send({
-      code: 1,
-      message: 'Failed to call tool'
+// GET /api/tools - 获取所有工具
+app.get('/api/tools', errorHandler(async (req: Request, res: Response) => {
+  const toolsOfServer = []
+  for (const [server_name, client] of allConnections.entries()) {
+    const tools = await client.listTools()
+    toolsOfServer.push({
+      server_name,
+      tools
     })
   }
-})
 
-export function createHostServer(mcpClient: MCPClient) {
-  _mcpClient = mcpClient
+  res.json({
+    code: 0,
+    data: toolsOfServer
+  })
+}))
+
+// GET /api/resources - 获取所有资源
+app.get('/api/resources', errorHandler(async (req: Request, res: Response) => {
+  const resourcesOfServer = []
+  for (const [server_name, client] of allConnections.entries()) {
+    const resources = await client.listResources()
+    resourcesOfServer.push({
+      server_name,
+      resources
+    })
+  }
+  res.json({
+    code: 0,
+    data: resourcesOfServer
+  })
+}))
+
+// POST /api/tools/toolCall - 调用指定 server 的工具
+app.post('/api/tools/toolCall', errorHandler(async (req: Request, res: Response) => {
+  const toolCallArgs = req.body
+  const { server_name, tool_name, tool_args } = toolCallArgs
+  const thatClient = allConnections.get(server_name) as MCPClient
+  const result = await thatClient.callTool(tool_name, tool_args)
+  res.json({
+    code: 0,
+    data: result
+  })
+}))
+
+const PORT = 36003
+
+export function createHostServer(connections: Map<string, MCPClient>) {
+  allConnections = connections
+  allClients = Array.from(connections.values())
   app.listen(PORT, () => {
-    console.log(`[Host Server] is running on port http://localhost:${PORT}`)
+    console.log(`[MCP Host Server] running on: http://localhost:${PORT}`)
   })
 }

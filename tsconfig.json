@@ -3,7 +3,7 @@
       // 编译目标版本
       "target": "es2020", // 编译成 ES2020 版本的 JavaScript
       "module": "esnext", // 使用 ESNext 的模块系统
-      "lib": ["es2020", "dom"], // 包含 ES2020 和 DOM 的类型定义
+      "lib": ["es2020"], // 包含 ES2020 的类型定义
       "moduleResolution": "node",
       "esModuleInterop": true, // 启用 ES 模块与 CommonJS 模块的互操作性
       "resolveJsonModule": true, // 允许导入 json 文件
@@ -14,5 +14,5 @@
       "forceConsistentCasingInFileNames": true
     },
     "include": ["src/**/*.ts"],
-    "exclude": ["node_modules"]
+    "exclude": ["node_modules", "dist", "examples", "eslint.config.mjs"]
 }

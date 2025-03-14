@@ -1,19 +1,20 @@
 {
-  "name": "mcp-client-node",
+  "name": "mcp-host-node",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx src/index.ts",
+    "dev": "tsx src/main.ts",
+    "lint": "eslint . --fix && npm run format",
+    "format": "prettier --write \"src/**/*.{js,ts,mjs}\"",
     "build": "shx rm -rf dist && rollup -c --environment BUILD:production && shx chmod 755 dist/*.js",
-    "build:dist": "shx rm -rf dist && rollup -c --environment BUILD:production",
-    "build:exe": "npm run build:dist && shx rm -rf mcp_client.exe && npx -y pkg ./dist/index.js -t node18-win-x64 -o mcp_client.exe",
-    "build:cross": "npm run build:dist && shx rm -rf mcp_client-* && npx -y pkg ./dist/index.js -t node18-win-x64,node18-macos-x64 -o mcp_client"
+    "build:exe": "npm run build && shx rm -rf mcp_client.exe && npx -y pkg ./dist/index.js -t node18-win-x64 -o mcp_client.exe",
+    "build:cross": "npm run build && shx rm -rf mcp_client-* && npx -y pkg ./dist/index.js -t node18-win-x64,node18-macos-x64 -o mcp_client"
   },
   "keywords": [],
-  "author": "liujilong",
+  "author": "liujilong@360.cn",
   "license": "ISC",
-  "description": "",
+  "description": "MCP Host APP",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.7.0",
     "express": "^5.0.1",
@@ -25,12 +26,17 @@
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.2",
+    "@stylistic/eslint-plugin": "^4.2.0",
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.10",
+    "eslint-config-prettier": "^10.1.1",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3",
     "rollup": "^4.35.0",
     "shx": "^0.3.4",
     "tslib": "^2.8.1",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.26.1"
   }
 }

@@ -9,3 +9,13 @@ export interface MCPClientConfig {
       sseUrl?: string;
     };
 }
+
+/** Server 配置文件 */
+export interface MCPServerConfig {
+  server_name: string;
+  type: 'stdio' | 'sse';
+  command?: string;
+  args?: string[];
+  sse_url?: string;
+  enabled: boolean;
+}

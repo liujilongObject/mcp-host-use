@@ -9,17 +9,17 @@ const extensions = ['.js', '.ts']
 
 export default defineConfig([
   {
-    input: 'src/index.ts',
+    input: 'src/main.ts',
     output: [
-      {
-        file: 'dist/index.js',
-        format: 'cjs',
-      },
       // {
-      //   file: 'dist/index.esm.js',
-      //   format: 'esm',
-      //   exports: 'named',
+      //   file: 'dist/index.cjs',
+      //   format: 'cjs',
       // },
+      {
+        file: 'dist/index.esm.js',
+        format: 'esm',
+        exports: 'named',
+      },
     ],
     plugins: [
       nodeResolve({ extensions }),

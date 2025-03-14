@@ -6,7 +6,6 @@ import type { Resource } from '@modelcontextprotocol/sdk/types.js';
 import readline from "node:readline/promises";
 import { MCPClientConfig } from "./types.js";
 import { join } from 'node:path'
-import { createHostServer } from "./server.js";
 
 const OPENAI_API_KEY = 'fk116920899.ChJ2B7hhq3Lv2AMgCSGuYYxh3pb1-EfO0ba990d3'
 const OPENAI_BASE_URL = 'https://api.360.cn/v1'
@@ -19,8 +18,9 @@ export class MCPClient {
   private mcpClient: Client;
   private openaiClient: OpenAI;
   private transport: StdioClientTransport | SSEClientTransport | null = null;
-  private tools: OpenAI.ChatCompletionTool[] = [];
   private clientConfig: MCPClientConfig;
+
+  private openaiTools: OpenAI.ChatCompletionTool[] = [];
 
   constructor(config: MCPClientConfig) {
     this.clientConfig = config.transportType === 'stdio' ? {
@@ -85,21 +85,21 @@ export class MCPClient {
       this.transport = this.createTransport();
 
       await this.mcpClient.connect(this.transport);
-      console.log("[MCP] Connected to server");
+      console.log("[MCP Client] Connected to server");
 
       const toolsList = await this.listTools();
       console.log(
-        "[MCP] list tools:",
-        toolsList.map((tool) => tool.function.name)
+        "[MCP Client] list tools:",
+        toolsList.map((tool) => tool.name)
       );
 
       const resourcesList = await this.listResources();
       console.log(
-        "[MCP] list resources:",
+        "[MCP Client] list resources:",
         resourcesList.map((resource) => resource.uri)
       );
     } catch (error) {
-      console.log("[MCP] Failed to connect to server: ", error);
+      console.log("[MCP Client] Failed to connect to server: ", error);
       throw error;
     }
   }
@@ -111,7 +111,7 @@ export class MCPClient {
           throw new Error('Missing command for stdio transport');
         }
         
-        console.log('[MCP] Using stdio transport');
+        console.log('[MCP Client] Using stdio transport');
         return new StdioClientTransport({
           command: this.clientConfig.serverConfig.command,
           args: this.clientConfig.serverConfig.args || []
@@ -122,7 +122,7 @@ export class MCPClient {
           throw new Error('invalid SSE URL');
         }
 
-        console.log('[MCP] Using SSE transport');
+        console.log('[MCP Client] Using SSE transport');
         return new SSEClientTransport(
           new URL(this.clientConfig.serverConfig.sseUrl)
         );
@@ -150,20 +150,21 @@ export class MCPClient {
         }
       }
 
-      this.tools = toolsResult?.tools?.map((tool) => {
-        return {
-          type: "function",
-          function: {
-            name: tool.name,
-            description: tool.description,
-            parameters: tool.inputSchema,
-          },
-        };
-      }) ?? [];
+      // 将 MCP 工具转换为 OpenAI 工具
+      // this.openaiTools = toolsResult?.tools?.map((tool) => {
+      //   return {
+      //     type: "function",
+      //     function: {
+      //       name: tool.name,
+      //       description: tool.description,
+      //       parameters: tool.inputSchema,
+      //     },
+      //   };
+      // }) ?? [];
 
-      return this.tools;
+      return toolsResult?.tools ?? [];
     } catch (error) {
-      console.log("[MCP] Failed to list tools: ", error);
+      console.log("[MCP Client] Failed to list tools: ", error);
       throw error;
     }
   }
@@ -177,7 +178,7 @@ export class MCPClient {
 
       return result;
     } catch (error) {
-      console.log("[MCP] Failed to call tool: ", error);
+      console.log("[MCP Client] Failed to call tool: ", error);
       throw error;
     }
   }
@@ -187,7 +188,7 @@ export class MCPClient {
       const result = await this.mcpClient.listResources();
       return result.resources;
     } catch (error) {
-      console.log("[MCP] Failed to list resources:", error);
+      console.log("[MCP Client] Failed to list resources:", error);
       throw error;
     }
   }
@@ -197,11 +198,12 @@ export class MCPClient {
       const result = await this.mcpClient.readResource({ uri });
       return result.contents;
     } catch (error) {
-      console.log("[MCP] Failed to read resource:", error);
+      console.log("[MCP Client] Failed to read resource:", error);
       throw error;
     }
   }
 
+  // 与大模型交互
   async processQuery(query: string) {
     try {
       const messages: OpenAI.ChatCompletionMessageParam[] = [
@@ -215,7 +217,7 @@ export class MCPClient {
         model: "gpt-4o",
         max_completion_tokens: 2048,
         messages,
-        tools: this.tools,
+        tools: this.openaiTools,
       });
       console.log("LLM Response: ", JSON.stringify(response, null, 2));
       const finalText = [];
@@ -256,7 +258,7 @@ export class MCPClient {
             model: "gpt-4o",
             max_completion_tokens: 2048,
             messages,
-            tools: this.tools,
+            tools: this.openaiTools,
           });
           
           console.log('======response after tool call========', JSON.stringify(response, null, 2))
@@ -308,37 +310,3 @@ export class MCPClient {
     await this.mcpClient.close();
   }
 }
-
-async function main() {
-    const args = process.argv.slice(2);
-    console.log('args---', args)
-
-    // const client = new MCPClient({
-    //   transportType: 'stdio',
-    //   serverConfig: {
-    //     command: 'npx',
-    //     args: [
-    //       '-y',
-    //       '@modelcontextprotocol/server-everything'
-    //     ]
-    //   }
-    // });
-
-    const client = new MCPClient({
-      transportType: 'sse',
-      serverConfig: {
-        sseUrl: 'http://localhost:3001/sse'
-      }
-    });
-
-    createHostServer(client)
-    try {
-      await client.connectToServer();
-      await client.chatLoop();
-    } finally {
-      await client.cleanup();
-      process.exit(0);
-    }
-}
-
-main();

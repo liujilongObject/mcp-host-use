@@ -6,3 +6,4 @@ test-dir
 mcp_client*
 llms-full.txt
 SDK-README.md
+mcp_servers.config.json
