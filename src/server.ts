@@ -33,10 +33,10 @@ const errorHandler = (fn: Function) => async (req: Request, res: Response) => {
 app.get(
   '/api/tools',
   errorHandler(async (req: Request, res: Response) => {
-    const toolsOfServer = []
+    const toolsOfServers = []
     for (const [server_name, client] of allConnections.entries()) {
       const tools = await client.listTools()
-      toolsOfServer.push({
+      toolsOfServers.push({
         server_name,
         tools,
       })
@@ -44,7 +44,7 @@ app.get(
 
     res.json({
       code: 0,
-      data: toolsOfServer,
+      data: toolsOfServers,
     })
   })
 )
@@ -53,17 +53,33 @@ app.get(
 app.get(
   '/api/resources',
   errorHandler(async (req: Request, res: Response) => {
-    const resourcesOfServer = []
+    const resourcesOfServers = []
     for (const [server_name, client] of allConnections.entries()) {
       const resources = await client.listResources()
-      resourcesOfServer.push({
+      resourcesOfServers.push({
         server_name,
         resources,
       })
     }
+
     res.json({
       code: 0,
-      data: resourcesOfServer,
+      data: resourcesOfServers.filter((item) => item.resources.length > 0),
+    })
+  })
+)
+
+// POST /api/resources/read - 获取指定的资源
+app.post(
+  '/api/resources/read',
+  errorHandler(async (req: Request, res: Response) => {
+    const { server_name, resource_uri } = req.body
+    const thatClient = allConnections.get(server_name)!
+    const result = await thatClient.readResource(resource_uri)
+
+    res.json({
+      code: 0,
+      data: result,
     })
   })
 )
@@ -72,10 +88,10 @@ app.get(
 app.post(
   '/api/tools/toolCall',
   errorHandler(async (req: Request, res: Response) => {
-    const toolCallArgs = req.body
-    const { server_name, tool_name, tool_args } = toolCallArgs
+    const { server_name, tool_name, tool_args } = req.body
     const thatClient = allConnections.get(server_name)!
     const result = await thatClient.callTool(tool_name, tool_args)
+
     res.json({
       code: 0,
       data: result,
@@ -83,12 +99,12 @@ app.post(
   })
 )
 
-const PORT = 36003
+const PORT = 17925
 
 export function createHostServer(connections: Map<string, MCPClient>) {
   allConnections = connections
   allClients = Array.from(connections.values())
   app.listen(PORT, () => {
-    console.log(`\n [MCP Host Server] running on: http://localhost:${PORT} \n`)
+    console.log(`[MCP Host Server] running on: http://localhost:${PORT} \n`)
   })
 }

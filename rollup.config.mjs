@@ -16,7 +16,7 @@ export default defineConfig([
       //   format: 'cjs',
       // },
       {
-        file: 'dist/index.esm.js',
+        file: 'dist/index.js',
         format: 'esm',
         exports: 'named',
       },

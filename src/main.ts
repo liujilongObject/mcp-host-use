@@ -1,5 +1,8 @@
+#!/usr/bin/env node
+
 import { MCPConnectionManager } from './host.js'
 import { createHostServer } from './server.js'
+import { MCPServerConfig } from './types.js'
 import { getServerConfig, convertToClientConfig } from './utils.js'
 
 async function startMultipleConnections(): Promise<MCPConnectionManager> {
@@ -13,16 +16,29 @@ async function startMultipleConnections(): Promise<MCPConnectionManager> {
   // 创建连接管理器
   const connectionManager = new MCPConnectionManager()
 
-  // 为每个启用的服务器创建连接
-  for (const serverConfig of serverConfigData.mcp_servers) {
-    if (serverConfig.enabled) {
-      try {
-        const clientConfig = convertToClientConfig(serverConfig)
-        await connectionManager.createConnection(serverConfig.server_name, clientConfig)
-      } catch (error) {
-        console.error(`[MCP Host] 服务器 <${serverConfig.server_name}> 连接失败:`, error)
-      }
+  const enabledServers: MCPServerConfig[] = serverConfigData?.mcp_servers?.filter?.(
+    (server: MCPServerConfig) => server.enabled
+  )
+  if (!enabledServers?.length) {
+    throw new Error('没有启用的服务器')
+  }
+
+  try {
+    const connectionResults = await Promise.allSettled(
+      enabledServers.map((server) =>
+        connectionManager.createConnection(server.server_name, convertToClientConfig(server))
+      )
+    )
+
+    // 检查是否所有连接都失败
+    const successfulConnections = connectionResults.filter(
+      (result) => result.status === 'fulfilled'
+    )
+    if (successfulConnections.length === 0) {
+      throw new Error('所有服务器连接均失败，无法启动 Host 服务')
     }
+  } catch (error) {
+    throw error
   }
 
   return connectionManager
@@ -35,6 +51,7 @@ async function main() {
     createHostServer(connections)
   } catch (error) {
     console.error('[MCP Host] 启动失败', error)
+    process.exit(1)
   }
 }
 

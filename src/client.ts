@@ -2,9 +2,10 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
 import type { Resource } from '@modelcontextprotocol/sdk/types.js'
-import readline from 'node:readline/promises'
 import { MCPClientConfig } from './types.js'
 import { join } from 'node:path'
+import { isSystemNodejs } from './utils.js'
+
 export class MCPClient {
   private mcpClient: Client
   private transport: StdioClientTransport | SSEClientTransport | null = null
@@ -39,7 +40,16 @@ export class MCPClient {
   ): MCPClientConfig['serverConfig'] {
     const command = sourceServerConfig.command || ''
     if (command === 'npx') {
-      const currentNpxPath = join(process.cwd(), 'npx')
+      let currentNpxPath = ''
+
+      if (isSystemNodejs()) {
+        // 使用系统安装的 npx
+        currentNpxPath = 'npx'
+      } else {
+        // 使用当前目录下的 npx
+        currentNpxPath = join(process.cwd(), 'npx')
+      }
+
       const args = sourceServerConfig.args || []
       // 在 Windows 上使用 cmd 执行 npx 命令
       if (process.platform === 'win32') {
@@ -58,7 +68,7 @@ export class MCPClient {
     return sourceServerConfig
   }
 
-  // 添加判断是否为 SSE URL 的辅助方法
+  // 是否为 SSE URL
   private isSSEUrl(url: string): boolean {
     try {
       new URL(url)
@@ -73,7 +83,7 @@ export class MCPClient {
       this.transport = this.createTransport()
 
       await this.mcpClient.connect(this.transport)
-      console.log('[MCP Client] Connected to server')
+      console.log('[MCP Client] Connected to server successfully')
 
       const toolsList = await this.listTools()
       console.log(
@@ -87,7 +97,6 @@ export class MCPClient {
         resourcesList.map((resource) => resource.uri)
       )
     } catch (error) {
-      console.log('[MCP Client] Failed to connect to server: ', error)
       throw error
     }
   }
@@ -99,12 +108,12 @@ export class MCPClient {
           throw new Error('[MCP Client] Missing command for STDIO transport')
         }
 
-        console.log('\n [MCP Client] Using STDIO transport \n')
         return new StdioClientTransport({
           command: this.clientConfig.serverConfig.command,
           args: this.clientConfig.serverConfig.args || [],
+          env: this.clientConfig.serverConfig.env || undefined,
+          cwd: this.clientConfig.serverConfig.cwd || undefined,
         })
-
       case 'sse':
         if (
           !this.clientConfig.serverConfig.sseUrl ||
@@ -113,9 +122,7 @@ export class MCPClient {
           throw new Error('[MCP Client] invalid SSE URL')
         }
 
-        console.log('\n [MCP Client] Using SSE transport \n')
         return new SSEClientTransport(new URL(this.clientConfig.serverConfig.sseUrl))
-
       default:
         throw new Error(
           `[MCP Client] Unsupported transport type: ${this.clientConfig.transportType}`
@@ -140,18 +147,6 @@ export class MCPClient {
           await new Promise((resolve) => setTimeout(resolve, 1000))
         }
       }
-
-      // 将 MCP 工具转换为 OpenAI 工具
-      // this.openaiTools = toolsResult?.tools?.map((tool) => {
-      //   return {
-      //     type: "function",
-      //     function: {
-      //       name: tool.name,
-      //       description: tool.description,
-      //       parameters: tool.inputSchema,
-      //     },
-      //   };
-      // }) ?? [];
 
       return toolsResult?.tools ?? []
     } catch (error) {
@@ -180,7 +175,7 @@ export class MCPClient {
       return result.resources
     } catch (error) {
       console.log('[MCP Client] Failed to list resources:', error)
-      throw error
+      return []
     }
   }
 
@@ -190,7 +185,7 @@ export class MCPClient {
       return result.contents
     } catch (error) {
       console.log('[MCP Client] Failed to read resource:', error)
-      throw error
+      return []
     }
   }
 

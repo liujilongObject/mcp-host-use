@@ -13,6 +13,7 @@ export class MCPConnectionManager {
       console.log(`[MCP Host] 服务器 <${serverName}> 连接成功 \n`)
       return client
     } catch (error) {
+      console.error(`[MCP Host] 服务器 <${serverName}> 连接失败:`, error, '\n')
       throw error
     }
   }
