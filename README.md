@@ -17,7 +17,7 @@ graph TD
 ```
 
 ## 主要功能
-- 支持同时连接多个 MCP 服务器
+- 支持同时连接多个 MCP 服务器, 通过 `json` 文件管理多个 MCP 服务器
 - 支持 STDIO 和 SSE 两种传输方式
 - 提供统一的 HTTP API 接口，用于：
     - 获取所有服务器的工具列表
@@ -69,9 +69,9 @@ mcp-host-cli/
 {
     "mcp_servers": [
         {
-            "enabled": true,
-            "type": "stdio",
-            "server_name": "server-puppeteer",
+            "enabled": true, // 是否启用 server
+            "type": "stdio", // 'stdio' | 'sse'
+            "server_name": "server-puppeteer", // 自定义 name
             "command": "npx",
             "args": [
                 "-y",
@@ -93,7 +93,7 @@ mcp-host-cli/
                 "-y",
                 "@modelcontextprotocol/server-github"
             ],
-            "env": {
+            "env": { // 环境变量
                 "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"
             }
         }
@@ -110,7 +110,7 @@ mcp-host-cli/
 - 对于 SSE 传输方式，需要确保 URL 可访问
 
 
-## API 使用示例
+## API Endpoints
 
 ## Tools
 
