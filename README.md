@@ -41,7 +41,7 @@ mcp-host-cli/
 
 ## 使用
 
-### 1. 使用 `npm` 包，无须本地构建
+### 1. 使用 `npm` 包，无须本地构建 （推荐）
 
 `npx mcp-host-cli`
 
