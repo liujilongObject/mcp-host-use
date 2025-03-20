@@ -1,6 +1,6 @@
 # MCP-Host-CLI
 
-### MCP-Host-CLI 是一个基于 Node.js 的 Model Context Protocol (MCP) 主机应用程序，用于连接和管理多个 MCP 服务器。该项目提供了统一的接口，允许客户端通过 HTTP API 与多个 MCP 服务器进行交互，访问及调用工具(或资源)。你可以使用它快速测试及运行你的 MCP Servers。
+### MCP-Host-CLI 是一个基于 Node.js 的 Model Context Protocol (MCP) 主机应用程序，用于连接和管理多个 MCP 服务器。Host 提供了统一的接口，允许客户端通过 HTTP API 与多个 MCP 服务器进行交互，访问及调用工具(或资源)。你可以使用它快速测试及运行你的 MCP Servers。
 
 ## 架构图
 
