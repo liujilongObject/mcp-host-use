@@ -93,7 +93,7 @@ mcp-host-cli/
                 "-y",
                 "@modelcontextprotocol/server-github"
             ],
-            "env": { // 环境变量
+            "env": { // 支持配置环境变量
                 "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"
             }
         }

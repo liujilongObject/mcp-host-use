@@ -39,6 +39,7 @@ export class MCPClient {
     sourceServerConfig: MCPClientConfig['serverConfig']
   ): MCPClientConfig['serverConfig'] {
     const command = sourceServerConfig.command || ''
+
     if (command === 'npx') {
       let currentNpxPath = ''
 
@@ -51,20 +52,28 @@ export class MCPClient {
       }
 
       const args = sourceServerConfig.args || []
+      const env = sourceServerConfig.env || undefined
+      const cwd = sourceServerConfig.cwd || undefined
+
       // 在 Windows 上使用 cmd 执行 npx 命令
       if (process.platform === 'win32') {
         return {
           command: 'cmd',
           args: ['/c', currentNpxPath, ...args],
+          env,
+          cwd,
         }
       } else {
         // 在 Unix 系统上使用 bash 执行 npx 命令
         return {
           command: 'bash',
           args: ['-c', `${currentNpxPath} ${args.join(' ')}`],
+          env,
+          cwd,
         }
       }
     }
+
     return sourceServerConfig
   }
 
@@ -75,29 +84,6 @@ export class MCPClient {
       return url.startsWith('http://') || url.startsWith('https://')
     } catch {
       return false
-    }
-  }
-
-  async connectToServer() {
-    try {
-      this.transport = this.createTransport()
-
-      await this.mcpClient.connect(this.transport)
-      console.log('[MCP Client] Connected to server successfully')
-
-      const toolsList = await this.listTools()
-      console.log(
-        '[MCP Client] list tools:',
-        toolsList.map((tool) => tool.name)
-      )
-
-      const resourcesList = await this.listResources()
-      console.log(
-        '[MCP Client] list resources:',
-        resourcesList.map((resource) => resource.uri)
-      )
-    } catch (error) {
-      throw error
     }
   }
 
@@ -127,6 +113,29 @@ export class MCPClient {
         throw new Error(
           `[MCP Client] Unsupported transport type: ${this.clientConfig.transportType}`
         )
+    }
+  }
+
+  async connectToServer() {
+    try {
+      this.transport = this.createTransport()
+
+      await this.mcpClient.connect(this.transport)
+      console.log('[MCP Client] Connected to server successfully')
+
+      const toolsList = await this.listTools()
+      console.log(
+        '[MCP Client] list tools:',
+        toolsList.map((tool) => tool.name)
+      )
+
+      const resourcesList = await this.listResources()
+      console.log(
+        '[MCP Client] list resources:',
+        resourcesList.map((resource) => resource.uri)
+      )
+    } catch (error) {
+      throw error
     }
   }
 

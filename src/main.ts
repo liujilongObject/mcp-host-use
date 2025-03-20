@@ -45,12 +45,14 @@ async function startMultipleConnections(): Promise<MCPConnectionManager> {
 }
 
 async function main() {
+  let connectionManager = null
   try {
-    const connectionManager = await startMultipleConnections()
+    connectionManager = await startMultipleConnections()
     const connections = connectionManager.getAllConnections()
     createHostServer(connections)
   } catch (error) {
     console.error('[MCP Host] 启动失败', error)
+    await connectionManager?.closeAllConnections()
     process.exit(1)
   }
 }
