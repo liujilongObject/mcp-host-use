@@ -24,9 +24,9 @@ export async function getServerConfig() {
       const config = readFileSync(SERVER_CONFIG_PATH, 'utf-8')
       return JSON.parse(config)
     }
+    throw new Error(`不存在服务器配置文件: ${SERVER_CONFIG_PATH}`)
   } catch (error) {
-    console.error('获取服务器配置失败', error)
-    return {}
+    throw error
   }
 }
 

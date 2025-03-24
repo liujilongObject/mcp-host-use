@@ -1,0 +1,43 @@
+{
+    "mcp_servers": [
+        {
+            "enabled": false,
+            "type": "stdio",
+            "server_name": "sequential-thinking",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-sequential-thinking"
+            ]
+        },
+        {
+            "enabled": false,
+            "type": "stdio",
+            "server_name": "server-puppeteer",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-puppeteer"
+            ]
+        },
+        {
+            "enabled": false,
+            "type": "sse",
+            "server_name": "server-everything-sse",
+            "sse_url": "http://localhost:3001/sse"
+        },
+        {
+            "enabled": false,
+            "type": "stdio",
+            "server_name": "github",
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-github"
+            ],
+            "env": {
+                "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_TOKEN>"
+            }
+        }
+    ]
+}

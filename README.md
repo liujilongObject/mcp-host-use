@@ -24,6 +24,7 @@ graph TD
     - 调用特定服务器上的工具
     - 获取所有服务器的资源列表
     - 获取特定服务器上的资源
+    - 触发 Host 主动更新 Server 连接
 
 
 ## 项目结构
@@ -36,7 +37,6 @@ mcp-host-cli/
 │   ├── server.ts             # HTTP 服务器实现
 │   ├── types.ts              # 类型定义
 │   └── utils.ts              # 工具函数
-├── dist/                     # 构建输出目录
 ```
 
 ## 使用
@@ -46,7 +46,7 @@ mcp-host-cli/
 `npx mcp-host-cli`
 
 
-### 2. clone 这个仓库后，本地构建
+### 2. 本地构建，clone 这个仓库 `git clone https://github.com/liujilongObject/mcp-host-cli.git`
 
 #### 安装依赖
 - `npm install`
@@ -63,7 +63,7 @@ mcp-host-cli/
 
 ## Servers 配置文件
 
-`mcp-host-cli` 会读取当前工作目录下的 `mcp_servers.config.json` 文件，文件格式如下：
+`mcp-host-cli` 会读取**当前工作目录**下的 `mcp_servers.config.json` 文件，文件格式如下：
 
 ```json
 {
@@ -216,6 +216,26 @@ Content-Type: application/json
     ]
 }
 ```
+
+
+## Connections
+
+### 1. 更新 Server 连接
+
+> **调用该 API 后，Host 会主动读取配置文件，并根据更新的配置来 新建/重启/删除 Server 连接。无需重启 Host 服务，继续调用 `/api/tools` 等 API 可以获取更新后的 Server 信息。**
+
+
+```bash
+POST http://localhost:17925/api/connections/update
+Content-Type: application/json
+
+```
+
+#### 响应
+```json
+{"code":0,"message":"成功更新服务器连接"}
+```
+
 
 ## TODO
 - [ ] 优化跨平台调用 STDIO Server 的 Python 命令

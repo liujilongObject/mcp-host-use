@@ -23,3 +23,6 @@ export interface MCPServerConfig {
   cwd?: string
   sse_url?: string
 }
+
+/** Server 连接状态 */
+export type MCPConnectionStatus = 'connected' | 'disconnected' | 'connecting' | 'error'

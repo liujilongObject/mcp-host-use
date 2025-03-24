@@ -119,21 +119,7 @@ export class MCPClient {
   async connectToServer() {
     try {
       this.transport = this.createTransport()
-
       await this.mcpClient.connect(this.transport)
-      console.log('[MCP Client] Connected to server successfully')
-
-      const toolsList = await this.listTools()
-      console.log(
-        '[MCP Client] list tools:',
-        toolsList.map((tool) => tool.name)
-      )
-
-      const resourcesList = await this.listResources()
-      console.log(
-        '[MCP Client] list resources:',
-        resourcesList.map((resource) => resource.uri)
-      )
     } catch (error) {
       throw error
     }
@@ -159,7 +145,6 @@ export class MCPClient {
 
       return toolsResult?.tools ?? []
     } catch (error) {
-      console.log('[MCP Client] Failed to list tools: ', error)
       throw error
     }
   }
@@ -173,7 +158,6 @@ export class MCPClient {
 
       return result
     } catch (error) {
-      console.log('[MCP Client] Failed to call tool: ', error)
       throw error
     }
   }
@@ -183,8 +167,7 @@ export class MCPClient {
       const result = await this.mcpClient.listResources()
       return result.resources
     } catch (error) {
-      console.log('[MCP Client] Failed to list resources:', error)
-      return []
+      throw error
     }
   }
 
@@ -193,8 +176,7 @@ export class MCPClient {
       const result = await this.mcpClient.readResource({ uri })
       return result.contents
     } catch (error) {
-      console.log('[MCP Client] Failed to read resource:', error)
-      return []
+      throw error
     }
   }
 
