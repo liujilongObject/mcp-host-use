@@ -39,6 +39,12 @@ mcp-host-cli/
 │   └── utils.ts              # 工具函数
 ```
 
+## 环境要求
+- **连接 STDIO MCP Server，需要 `npx` 或 `uvx` 的系统运行环境。**
+  - `npx` 依赖 Nodejs (>=18)
+  - `uvx` 依赖 Python (uv)
+
+
 ## 使用
 
 ### 1. 使用 `npm` 包，无须本地构建 （推荐）
@@ -105,8 +111,9 @@ mcp-host-cli/
 ## 注意事项
 - 服务器默认运行在 17925 端口
 - 确保配置文件中的服务器信息正确
-- 对于 STDIO 传输方式，需要确保命令可执行
-    - 使用 `npx` 指令时默认查找系统环境的 Nodejs；同时也支持使用自定义 Nodejs runtime 调用
+- 对于 STDIO 传输方式，需要确保以下命令可执行
+    - `npx`
+    - `uvx`
 - 对于 SSE 传输方式，需要确保 URL 可访问
 
 
@@ -235,10 +242,6 @@ Content-Type: application/json
 ```json
 {"code":0,"message":"成功更新服务器连接"}
 ```
-
-
-## TODO
-- [ ] 优化跨平台调用 STDIO Server 的 Python 命令
 
 ## License
 

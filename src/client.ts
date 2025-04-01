@@ -3,8 +3,6 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
 import type { Resource } from '@modelcontextprotocol/sdk/types.js'
 import { MCPClientConfig } from './types.js'
-import { join } from 'node:path'
-import { isSystemNodejs } from './utils.js'
 
 export class MCPClient {
   private mcpClient: Client
@@ -12,13 +10,7 @@ export class MCPClient {
   private clientConfig: MCPClientConfig
 
   constructor(config: MCPClientConfig) {
-    this.clientConfig =
-      config.transportType === 'stdio'
-        ? {
-            transportType: 'stdio',
-            serverConfig: this.generateCallStdioServerCommand(config.serverConfig),
-          }
-        : config
+    this.clientConfig = config
 
     // 创建 MCP 协议客户端
     this.mcpClient = new Client(
@@ -35,46 +27,88 @@ export class MCPClient {
     )
   }
 
-  private generateCallStdioServerCommand(
+  private async generateCallStdioServerCommand(
     sourceServerConfig: MCPClientConfig['serverConfig']
-  ): MCPClientConfig['serverConfig'] {
+  ): Promise<MCPClientConfig['serverConfig']> {
     const command = sourceServerConfig.command || ''
-
     if (command === 'npx') {
-      let currentNpxPath = ''
+      return this.generateNpxCommand(sourceServerConfig)
+    }
+    if (command === 'uvx') {
+      return this.generateUvxCommand(sourceServerConfig)
+    }
+    return sourceServerConfig
+  }
 
-      if (isSystemNodejs()) {
-        // 使用系统安装的 npx
-        currentNpxPath = 'npx'
-      } else {
-        // 使用当前目录下的 npx
-        currentNpxPath = join(process.cwd(), 'npx')
-      }
+  // 生成 npx 命令
+  private async generateNpxCommand(serverConfig: MCPClientConfig['serverConfig']) {
+    const currentNpxPath = 'npx'
+    // 使用 npmmirror 镜像
+    const npmMirrorRegistry = 'https://registry.npmmirror.com'
 
-      const args = sourceServerConfig.args || []
-      const env = sourceServerConfig.env || undefined
-      const cwd = sourceServerConfig.cwd || undefined
+    const args = serverConfig.args || []
+    const env = serverConfig.env || {}
+    const cwd = serverConfig.cwd || undefined
 
-      // 在 Windows 上使用 cmd 执行 npx 命令
-      if (process.platform === 'win32') {
-        return {
-          command: 'cmd',
-          args: ['/c', currentNpxPath, ...args],
-          env,
-          cwd,
-        }
-      } else {
-        // 在 Unix 系统上使用 bash 执行 npx 命令
-        return {
-          command: 'bash',
-          args: ['-c', `${currentNpxPath} ${args.join(' ')}`],
-          env,
-          cwd,
-        }
+    // 在 Windows 上使用 cmd 执行 npx 命令
+    if (process.platform === 'win32') {
+      return {
+        command: 'cmd',
+        args: ['/c', currentNpxPath, `--registry=${npmMirrorRegistry}`, ...args],
+        env: {
+          ...env,
+          NPM_CONFIG_REGISTRY: npmMirrorRegistry,
+        },
+        cwd,
       }
     }
 
-    return sourceServerConfig
+    // 在 Unix 系统上使用 bash 执行 npx 命令
+    return {
+      command: 'bash',
+      args: ['-c', `${currentNpxPath} --registry=${npmMirrorRegistry} ${args.join(' ')}`],
+      env: {
+        ...env,
+        NPM_CONFIG_REGISTRY: npmMirrorRegistry,
+      },
+      cwd,
+    }
+  }
+
+  // python server: 生成 uvx 命令
+  private async generateUvxCommand(serverConfig: MCPClientConfig['serverConfig']) {
+    const currentUvxPath = 'uvx'
+
+    const args = serverConfig.args || []
+    const env = serverConfig.env || {}
+    const cwd = serverConfig.cwd || undefined
+
+    // 设置 uv 下载源
+    const uvDefaultIndex = 'https://pypi.tuna.tsinghua.edu.cn/simple'
+
+    // 在 Windows 上使用 cmd 执行 uvx 命令
+    if (process.platform === 'win32') {
+      return {
+        command: 'cmd',
+        args: ['/c', currentUvxPath, ...args],
+        env: {
+          ...env,
+          UV_DEFAULT_INDEX: uvDefaultIndex,
+        },
+        cwd,
+      }
+    }
+
+    // 在 Unix 系统上使用 bash 执行 uvx 命令
+    return {
+      command: 'bash',
+      args: ['-c', `${currentUvxPath} ${args.join(' ')}`],
+      env: {
+        ...env,
+        UV_DEFAULT_INDEX: uvDefaultIndex,
+      },
+      cwd,
+    }
   }
 
   // 是否为 SSE URL
@@ -117,11 +151,40 @@ export class MCPClient {
   }
 
   async connectToServer() {
-    try {
-      this.transport = this.createTransport()
-      await this.mcpClient.connect(this.transport)
-    } catch (error) {
-      throw error
+    // 最大重试次数
+    const maxRetries = 3
+    // 重试间隔（毫秒）
+    const retryDelay = 1000
+    let retries = 0
+
+    while (retries < maxRetries) {
+      try {
+        // 处理 stdio 配置
+        if (this.clientConfig.transportType === 'stdio') {
+          const stdioServerConfig = await this.generateCallStdioServerCommand(
+            this.clientConfig.serverConfig
+          )
+          console.log('[MCP Client] stdioServerConfig', JSON.stringify(stdioServerConfig, null, 2))
+          this.clientConfig = {
+            transportType: 'stdio',
+            serverConfig: stdioServerConfig,
+          }
+        }
+
+        this.transport = this.createTransport()
+        await this.mcpClient.connect(this.transport)
+        // 连接成功，跳出循环
+        return
+      } catch (error) {
+        retries++
+        console.log(`[MCP Client] 连接服务器失败，剩余重试次数: ${maxRetries - retries}`)
+        // 如果已达到最大重试次数，则抛出错误
+        if (retries >= maxRetries) {
+          throw error
+        }
+        // 等待后重试
+        await new Promise((resolve) => setTimeout(resolve, retryDelay))
+      }
     }
   }
 
@@ -135,7 +198,7 @@ export class MCPClient {
           toolsResult = await this.mcpClient.listTools()
           break
         } catch (error) {
-          console.log(`获取工具列表失败，剩余重试次数: ${retries - 1}`)
+          // console.log(`获取工具列表失败，剩余重试次数: ${retries - 1}`)
           retries--
           if (retries === 0) throw error
           // 等待1秒后重试
@@ -151,10 +214,14 @@ export class MCPClient {
 
   async callTool(toolName: string, toolArgs: any) {
     try {
-      const result = await this.mcpClient.callTool({
-        name: toolName,
-        arguments: toolArgs,
-      })
+      const result = await this.mcpClient.callTool(
+        {
+          name: toolName,
+          arguments: toolArgs,
+        },
+        undefined,
+        { timeout: 5 * 60 * 1000 } // 5分钟超时
+      )
 
       return result
     } catch (error) {

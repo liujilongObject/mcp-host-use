@@ -5,8 +5,12 @@
   "license": "MIT",
   "homepage": "https://github.com/liujilongObject/mcp-host-cli",
   "bugs": "https://github.com/liujilongObject/mcp-host-cli/issues",
-  "description": "A simple and easy-to-use MCP Host CLI",
+  "description": "A simple and easy-to-use MCP Host CLI Tool.",
   "type": "module",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "bin": {
     "mcp-host-cli": "./dist/index.js"
   },
@@ -17,7 +21,7 @@
     "prepublishOnly": "npm run build"
   },
   "keywords": [
-    "mcp",
+    "MCP",
     "MCP Host",
     "MCP Client",
     "MCP Server",

@@ -1,13 +1,22 @@
 {
     "mcp_servers": [
         {
-            "enabled": false,
+            "enabled": true,
             "type": "stdio",
             "server_name": "sequential-thinking",
             "command": "npx",
             "args": [
                 "-y",
                 "@modelcontextprotocol/server-sequential-thinking"
+            ]
+        },
+        {
+            "enabled": false,
+            "type": "stdio",
+            "server_name": "nba-mcp-server",
+            "command": "uvx",
+            "args": [
+                "nba-mcp-server"
             ]
         },
         {

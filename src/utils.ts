@@ -1,6 +1,7 @@
 import { MCPClientConfig, MCPServerConfig } from './types.js'
 import { join } from 'node:path'
 import { existsSync, readFileSync } from 'node:fs'
+import { execSync } from 'node:child_process'
 
 export function convertToClientConfig(serverConfig: MCPServerConfig): MCPClientConfig {
   return {
@@ -18,11 +19,11 @@ export function convertToClientConfig(serverConfig: MCPServerConfig): MCPClientC
 // 获取服务器配置
 const SERVER_CONFIG_PATH = join(process.cwd(), 'mcp_servers.config.json')
 
-export async function getServerConfig() {
+export async function getServerConfig(): Promise<MCPServerConfig[]> {
   try {
     if (existsSync(SERVER_CONFIG_PATH)) {
       const config = readFileSync(SERVER_CONFIG_PATH, 'utf-8')
-      return JSON.parse(config)
+      return JSON.parse(config)?.mcp_servers ?? []
     }
     throw new Error(`不存在服务器配置文件: ${SERVER_CONFIG_PATH}`)
   } catch (error) {
@@ -45,4 +46,41 @@ export function isSystemNodejs() {
   } catch (error) {
     return false
   }
+}
+
+// 获取系统上的 npx 安装路径
+export function getSystemNpxPath() {
+  try {
+    const command = process.platform === 'win32' ? 'where npx' : 'which npx'
+    const npxPath = execSync(command, { encoding: 'utf-8' }).trim()
+    return npxPath
+  } catch (error) {
+    console.log('[MCP Host] Failed to get system npx path:', error)
+    return 'npx'
+  }
+}
+
+/**
+ * 设置请求超时
+ * @param promise 请求
+ * @param timeoutMs 超时时间
+ * @param fallbackValue 超时返回值
+ * @returns
+ */
+export async function withTimeoutPromise<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  fallbackValue?: T
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`操作超时 (${timeoutMs}ms)`))
+      }, timeoutMs)
+    }),
+  ]).catch((err) => {
+    console.error(`[withTimeoutPromise] Promise执行失败: ${err.message}`)
+    return fallbackValue as T
+  })
 }

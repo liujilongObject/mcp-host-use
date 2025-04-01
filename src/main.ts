@@ -10,11 +10,11 @@ async function main() {
     // 创建连接管理器
     connectionManager = new MCPConnectionManager()
 
-    // 启动连接管理器
-    await connectionManager.start()
+    // 创建并启动 Host 服务器
+    await createHostServer(connectionManager)
 
-    // 创建并启动Host服务器
-    createHostServer(connectionManager)
+    // 启动时创建所有已安装的服务连接
+    connectionManager.start()
 
     // 添加进程退出处理
     process.on('SIGINT', cleanup)
