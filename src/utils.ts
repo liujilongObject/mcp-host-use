@@ -60,6 +60,18 @@ export function getSystemNpxPath() {
   }
 }
 
+// 获取系统上的 uvx 安装路径
+export function getSystemUvxPath() {
+  try {
+    const command = process.platform === 'win32' ? 'where uvx' : 'which uvx'
+    const uvxPath = execSync(command, { encoding: 'utf-8' }).trim()
+    return uvxPath
+  } catch (error) {
+    console.log('[MCP Host] Failed to get system uvx path:', error)
+    return 'uvx'
+  }
+}
+
 /**
  * 设置请求超时
  * @param promise 请求

@@ -3,6 +3,8 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
 import type { Resource } from '@modelcontextprotocol/sdk/types.js'
 import { MCPClientConfig } from './types.js'
+import { z } from 'zod'
+import { getSystemNpxPath, getSystemUvxPath } from './utils.js'
 
 export class MCPClient {
   private mcpClient: Client
@@ -42,7 +44,7 @@ export class MCPClient {
 
   // 生成 npx 命令
   private async generateNpxCommand(serverConfig: MCPClientConfig['serverConfig']) {
-    const currentNpxPath = 'npx'
+    const currentNpxPath = getSystemNpxPath()
     // 使用 npmmirror 镜像
     const npmMirrorRegistry = 'https://registry.npmmirror.com'
 
@@ -77,7 +79,7 @@ export class MCPClient {
 
   // python server: 生成 uvx 命令
   private async generateUvxCommand(serverConfig: MCPClientConfig['serverConfig']) {
-    const currentUvxPath = 'uvx'
+    const currentUvxPath = getSystemUvxPath()
 
     const args = serverConfig.args || []
     const env = serverConfig.env || {}
@@ -212,7 +214,14 @@ export class MCPClient {
     }
   }
 
-  async callTool(toolName: string, toolArgs: any) {
+  /**
+   * 调用工具
+   * @param toolName 工具名称
+   * @param toolArgs 工具参数
+   * @param timeout 工具调用超时时间，默认 5 分钟
+   * @returns 工具返回结果
+   */
+  async callTool(toolName: string, toolArgs: any, timeout: number = 5 * 60 * 1000) {
     try {
       const result = await this.mcpClient.callTool(
         {
@@ -220,7 +229,7 @@ export class MCPClient {
           arguments: toolArgs,
         },
         undefined,
-        { timeout: 5 * 60 * 1000 } // 5分钟超时
+        { timeout }
       )
 
       return result
@@ -238,6 +247,11 @@ export class MCPClient {
     }
   }
 
+  /**
+   * 读取资源
+   * @param uri 要读取的资源 URI - 可使用任意协议，由服务器定义 (e.g. screenshot://1, console://logs)
+   * @returns 资源内容
+   */
   async readResource(uri: string): Promise<Partial<Resource>[]> {
     try {
       const result = await this.mcpClient.readResource({ uri })
@@ -245,6 +259,23 @@ export class MCPClient {
     } catch (error) {
       throw error
     }
+  }
+
+  /**
+   * 设置通知消息监听器
+   * @param methodName 通知方法名称 (e.g. notifications/resource/updated)
+   * @param callback 通知回调函数，接收通知负载数据
+   * @template T 通知负载数据类型
+   * @description 用于处理来自服务器的通知消息，当服务器发送指定方法的通知时，会调用提供的回调函数
+   */
+  async onMethodNotification<T>(methodName: string, callback: (payload: T) => void) {
+    this.mcpClient.setNotificationHandler(
+      z.object({
+        method: z.literal(methodName),
+        params: z.record(z.any()).optional(),
+      }),
+      callback as (payload: any) => void
+    )
   }
 
   async cleanup() {
