@@ -56,7 +56,7 @@ export class MCPClient {
     if (process.platform === 'win32') {
       return {
         command: 'cmd',
-        args: ['/c', currentNpxPath, `--registry=${npmMirrorRegistry}`, ...args],
+        args: ['/c', currentNpxPath, ...args],
         env: {
           ...env,
           NPM_CONFIG_REGISTRY: npmMirrorRegistry,
@@ -65,13 +65,15 @@ export class MCPClient {
       }
     }
 
-    // 在 Unix 系统上使用 bash 执行 npx 命令
+    // 在 Unix 系统上执行 npx 命令
     return {
-      command: 'bash',
-      args: ['-c', `${currentNpxPath} --registry=${npmMirrorRegistry} ${args.join(' ')}`],
+      command: currentNpxPath,
+      args,
       env: {
         ...env,
         NPM_CONFIG_REGISTRY: npmMirrorRegistry,
+        PATH: process.env.PATH || '', // 传递当前进程的 PATH
+        NODE_PATH: process.env.NODE_PATH || process.execPath, // 设置 NODE_PATH
       },
       cwd,
     }
@@ -101,13 +103,14 @@ export class MCPClient {
       }
     }
 
-    // 在 Unix 系统上使用 bash 执行 uvx 命令
+    // 在 Unix 系统上执行 uvx 命令
     return {
-      command: 'bash',
-      args: ['-c', `${currentUvxPath} ${args.join(' ')}`],
+      command: currentUvxPath,
+      args,
       env: {
         ...env,
         UV_DEFAULT_INDEX: uvDefaultIndex,
+        PATH: process.env.PATH || '', // 传递当前进程的 PATH
       },
       cwd,
     }

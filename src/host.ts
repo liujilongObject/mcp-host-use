@@ -107,12 +107,6 @@ export class MCPConnectionManager {
       try {
         this.connectionStatus.set(serverName, 'connecting')
         const client = new MCPClient(config)
-
-        console.log(
-          `[MCP Host] 开始连接服务器 <${serverName}> 使用配置:`,
-          JSON.stringify(config, null, 2)
-        )
-
         await client.connectToServer()
         this.connections.set(serverName, client)
         this.connectionStatus.set(serverName, 'connected')
