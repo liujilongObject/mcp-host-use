@@ -1,6 +1,10 @@
-# MCP-Host-CLI
+<p align="center">
+  中文 | <a href="./README.EN.md">EN</a>
+</p>
 
-### MCP-Host-CLI 是一个基于 Node.js 的 Model Context Protocol (MCP) 主机应用程序，用于连接和管理多个 MCP 服务器。Host 提供了统一的接口，允许客户端通过 HTTP API 与多个 MCP 服务器进行交互，访问及调用工具(或资源)。你可以使用它快速测试及运行你的 MCP Servers。
+# mcp-host-use
+
+### mcp-host-use 是一个基于 Node.js 的 Model Context Protocol (MCP) 主机应用程序，用于连接和管理多个 MCP 服务器。Host 提供了统一的接口，允许客户端通过 HTTP API 与多个 MCP 服务器进行交互，访问及调用工具(或资源)。你可以使用它快速测试及运行你的 MCP Servers。
 
 ## 架构图
 
@@ -29,7 +33,7 @@ graph TD
 
 ## 项目结构
 ```bash
-mcp-host-cli/
+mcp-host-use/
 ├── src/                      # 源代码目录
 │   ├── main.ts               # 主入口文件
 │   ├── host.ts               # MCP 连接管理器
@@ -49,10 +53,10 @@ mcp-host-cli/
 
 ### 1. 使用 `npm` 包，无须本地构建 （推荐）
 
-`npx mcp-host-cli`
+`npx mcp-host-use`
 
 
-### 2. 本地构建，clone 这个仓库 `git clone https://github.com/liujilongObject/mcp-host-cli.git`
+### 2. 本地构建，clone 这个仓库 `git clone https://github.com/liujilongObject/mcp-host-use.git`
 
 #### 安装依赖
 - `npm install`
@@ -69,7 +73,7 @@ mcp-host-cli/
 
 ## Servers 配置文件
 
-`mcp-host-cli` 会读取**当前工作目录**下的 `mcp_servers.config.json` 文件，文件格式如下：
+`mcp-host-use` 会读取**当前工作目录**下的 `mcp_servers.config.json` 文件，文件格式如下：
 
 ```json
 {

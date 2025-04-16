@@ -1,10 +1,10 @@
 {
-  "name": "mcp-host-cli",
-  "version": "0.0.7",
+  "name": "mcp-host-use",
+  "version": "0.0.1",
   "author": "liu4426350@qq.com",
   "license": "MIT",
-  "homepage": "https://github.com/liujilongObject/mcp-host-cli",
-  "bugs": "https://github.com/liujilongObject/mcp-host-cli/issues",
+  "homepage": "https://github.com/liujilongObject/mcp-host-use",
+  "bugs": "https://github.com/liujilongObject/mcp-host-use/issues",
   "description": "A simple and easy-to-use MCP Host CLI Tool.",
   "type": "module",
   "publishConfig": {
@@ -12,7 +12,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "bin": {
-    "mcp-host-cli": "./dist/index.js"
+    "mcp-host-use": "./dist/index.js"
   },
   "scripts": {
     "dev": "tsx src/main.ts",
