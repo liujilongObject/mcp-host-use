@@ -2,6 +2,7 @@ import { MCPClientConfig, MCPServerConfig } from './types.js'
 import { join } from 'node:path'
 import { existsSync, readFileSync } from 'node:fs'
 import { execSync } from 'node:child_process'
+import { platform } from 'node:process'
 
 export function convertToClientConfig(serverConfig: MCPServerConfig): MCPClientConfig {
   return {
@@ -14,6 +15,10 @@ export function convertToClientConfig(serverConfig: MCPServerConfig): MCPClientC
       sseUrl: serverConfig.sse_url,
     },
   }
+}
+
+export function isWin32() {
+  return platform === 'win32'
 }
 
 // 获取服务器配置
@@ -36,11 +41,11 @@ export function isSystemNodejs() {
   try {
     const nodePath = process.execPath
     return (
-      (process.platform === 'win32' &&
+      (isWin32() &&
         (nodePath.includes('Program Files') ||
           nodePath.includes('Windows') ||
           nodePath.includes('ProgramData'))) ||
-      (process.platform !== 'win32' &&
+      (!isWin32() &&
         (nodePath.includes('/usr/') || nodePath.includes('/bin/') || nodePath.includes('/opt/')))
     )
   } catch (error) {
@@ -51,7 +56,7 @@ export function isSystemNodejs() {
 // 获取系统上的 npx 安装路径
 export function getSystemNpxPath() {
   try {
-    const command = process.platform === 'win32' ? 'where npx' : 'which npx'
+    const command = isWin32() ? 'where npx' : 'which npx'
     const npxPath = execSync(command, { encoding: 'utf-8' }).trim()
     return npxPath
   } catch (error) {
@@ -63,7 +68,7 @@ export function getSystemNpxPath() {
 // 获取系统上的 uvx 安装路径
 export function getSystemUvxPath() {
   try {
-    const command = process.platform === 'win32' ? 'where uvx' : 'which uvx'
+    const command = isWin32() ? 'where uvx' : 'which uvx'
     const uvxPath = execSync(command, { encoding: 'utf-8' }).trim()
     return uvxPath
   } catch (error) {

@@ -4,7 +4,7 @@ import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
 import type { Resource } from '@modelcontextprotocol/sdk/types.js'
 import { MCPClientConfig } from './types.js'
 import { z } from 'zod'
-import { getSystemNpxPath, getSystemUvxPath } from './utils.js'
+import { getSystemNpxPath, getSystemUvxPath, isWin32 } from './utils.js'
 
 export class MCPClient {
   private mcpClient: Client
@@ -53,13 +53,13 @@ export class MCPClient {
     const cwd = serverConfig.cwd || undefined
 
     // 在 Windows 上使用 cmd 执行 npx 命令
-    if (process.platform === 'win32') {
+    if (isWin32()) {
       return {
         command: 'cmd',
         args: ['/c', currentNpxPath, ...args],
         env: {
-          ...env,
           NPM_CONFIG_REGISTRY: npmMirrorRegistry,
+          ...env,
         },
         cwd,
       }
@@ -67,11 +67,11 @@ export class MCPClient {
 
     // 在 Unix 系统上执行 npx 命令
     return {
-      command: currentNpxPath,
-      args,
+      command: 'bash',
+      args: ['-c', `'${currentNpxPath}' ${args.join(' ')}`],
       env: {
-        ...env,
         NPM_CONFIG_REGISTRY: npmMirrorRegistry,
+        ...env,
         PATH: process.env.PATH || '', // 传递当前进程的 PATH
         NODE_PATH: process.env.NODE_PATH || process.execPath, // 设置 NODE_PATH
       },
@@ -91,13 +91,13 @@ export class MCPClient {
     const uvDefaultIndex = 'https://pypi.tuna.tsinghua.edu.cn/simple'
 
     // 在 Windows 上使用 cmd 执行 uvx 命令
-    if (process.platform === 'win32') {
+    if (isWin32()) {
       return {
         command: 'cmd',
         args: ['/c', currentUvxPath, ...args],
         env: {
-          ...env,
           UV_DEFAULT_INDEX: uvDefaultIndex,
+          ...env,
         },
         cwd,
       }
@@ -105,11 +105,11 @@ export class MCPClient {
 
     // 在 Unix 系统上执行 uvx 命令
     return {
-      command: currentUvxPath,
-      args,
+      command: 'bash',
+      args: ['-c', `'${currentUvxPath}' ${args.join(' ')}`],
       env: {
-        ...env,
         UV_DEFAULT_INDEX: uvDefaultIndex,
+        ...env,
         PATH: process.env.PATH || '', // 传递当前进程的 PATH
       },
       cwd,
