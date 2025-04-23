@@ -1,7 +1,8 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
-import type { Resource } from '@modelcontextprotocol/sdk/types.js'
+import { Resource, McpError, CallToolRequest } from '@modelcontextprotocol/sdk/types.js'
+import type { RequestOptions } from '@modelcontextprotocol/sdk/shared/protocol.js'
 import { MCPClientConfig } from './types.js'
 import { z } from 'zod'
 import { getSystemNpxPath, getSystemUvxPath, isWin32 } from './utils.js'
@@ -11,13 +12,15 @@ export class MCPClient {
   private transport: StdioClientTransport | SSEClientTransport | null = null
   private clientConfig: MCPClientConfig
 
+  private notificationHandlers: Map<string, Function> = new Map()
+
   constructor(config: MCPClientConfig) {
     this.clientConfig = config
 
     // 创建 MCP 协议客户端
     this.mcpClient = new Client(
       {
-        name: 'mcp-client-node',
+        name: 'mcp-client-use',
         version: '1.0.0',
       },
       {
@@ -27,6 +30,10 @@ export class MCPClient {
         },
       }
     )
+
+    this.mcpClient.onclose = () => {
+      console.log('[MCP Client] mcp client close')
+    }
   }
 
   private async generateCallStdioServerCommand(
@@ -177,7 +184,17 @@ export class MCPClient {
         }
 
         this.transport = this.createTransport()
-        await this.mcpClient.connect(this.transport)
+        const connectPromise = this.mcpClient.connect(this.transport)
+
+        // HACK:必须在此处监听 stderr 输出
+        // (connect 初始化后，transport 被赋值; connectPromise 执行后，transport 被重置为 undefined)
+        if (this.transport instanceof StdioClientTransport) {
+          this.transport.stderr?.on('data', (chunk) => {
+            console.log('[MCP Client] 连接服务器 StdioClientTransport stderr:', chunk.toString())
+          })
+        }
+
+        await connectPromise
         // 连接成功，跳出循环
         return
       } catch (error) {
@@ -219,24 +236,71 @@ export class MCPClient {
 
   /**
    * 调用工具
-   * @param toolName 工具名称
-   * @param toolArgs 工具参数
-   * @param timeout 工具调用超时时间，默认 5 分钟
+   * @param toolReqParams 工具调用参数
+   * @param options 工具调用 options
    * @returns 工具返回结果
    */
-  async callTool(toolName: string, toolArgs: any, timeout: number = 5 * 60 * 1000) {
+  async callTool(toolReqParams: CallToolRequest['params'], options?: RequestOptions) {
     try {
-      const result = await this.mcpClient.callTool(
-        {
-          name: toolName,
-          arguments: toolArgs,
-        },
-        undefined,
-        { timeout }
-      )
-
-      return result
+      return await this.mcpClient.callTool(toolReqParams, undefined, options)
     } catch (error) {
+      throw error
+    }
+  }
+
+  /**
+   * @description 调用工具，并尝试重连
+   * @param toolName 工具名称
+   * @param toolArgs 工具调用参数
+   * @param toolOptions 工具调用 options
+   * @param toolMeta 工具调用 _meta
+   * @returns 工具返回结果
+   */
+  async callToolWithReconnect(
+    toolName: string,
+    toolArgs?: Record<string, unknown>,
+    toolOptions?: RequestOptions,
+    toolMeta?: {
+      progressToken?: string | number
+    }
+  ) {
+    const callToolParams: CallToolRequest['params'] = {
+      name: toolName,
+      arguments: toolArgs,
+      _meta: toolMeta,
+    }
+    const callToolOptions = {
+      ...toolOptions,
+      // 工具调用超时时间, 默认 10 分钟超时
+      timeout: toolOptions?.timeout || 10 * 60 * 1000,
+    }
+    try {
+      return await this.callTool(callToolParams, callToolOptions)
+    } catch (error) {
+      // 连接错误，尝试重连
+      if (error instanceof McpError && error?.code === -32000) {
+        console.log('[MCP Client] 检测到连接失败，尝试重新连接')
+        await this.reconnect()
+        // 重新调用工具
+        return await this.callTool(callToolParams, callToolOptions)
+      }
+      throw error
+    }
+  }
+
+  /**
+   * @description 重新连接服务器
+   */
+  async reconnect() {
+    try {
+      // 清理现有连接
+      await this.cleanup()
+      // 重新连接服务器
+      await this.connectToServer()
+      console.log('[MCP Client] 重新连接服务器成功')
+      return true
+    } catch (error) {
+      console.error('[MCP Client] 重新连接服务器失败', error)
       throw error
     }
   }
@@ -252,7 +316,7 @@ export class MCPClient {
 
   /**
    * 读取资源
-   * @param uri 要读取的资源 URI - 可使用任意协议，由服务器定义 (e.g. screenshot://1, console://logs)
+   * @param uri 要读取的资源 URI - 可使用任意协议，由服务器定义 e.g. screenshot://1, console://logs
    * @returns 资源内容
    */
   async readResource(uri: string): Promise<Partial<Resource>[]> {
@@ -265,23 +329,43 @@ export class MCPClient {
   }
 
   /**
-   * 设置通知消息监听器
-   * @param methodName 通知方法名称 (e.g. notifications/resource/updated)
-   * @param callback 通知回调函数，接收通知负载数据
-   * @template T 通知负载数据类型
-   * @description 用于处理来自服务器的通知消息，当服务器发送指定方法的通知时，会调用提供的回调函数
+   * @description 监听 server 发起的消息通知
+   * @param methodName 有 Mcp Server 定义的方法名称 (e.g. notifications/resources/updated)
+   * @param handler
    */
-  async onMethodNotification<T>(methodName: string, callback: (payload: T) => void) {
+  public on<T>(methodName: string, handler: (payload: T) => void): void {
+    this.notificationHandlers.set(methodName, handler)
+
     this.mcpClient.setNotificationHandler(
       z.object({
         method: z.literal(methodName),
         params: z.record(z.any()).optional(),
       }),
-      callback as (payload: any) => void
+      handler as (payload: any) => void
     )
   }
 
+  /**
+   * @description 移除消息监听器
+   * @param methodName
+   */
+  public off(methodName: string): void {
+    if (this.notificationHandlers.has(methodName)) {
+      this.notificationHandlers.delete(methodName)
+    }
+    this.mcpClient.removeNotificationHandler(methodName)
+  }
+
+  // 移除所有事件监听
+  public removeAllNotificationHandlers(): void {
+    const methods = Array.from(this.notificationHandlers.keys())
+    methods.forEach((methodName) => {
+      this.off(methodName)
+    })
+  }
+
   async cleanup() {
+    this.removeAllNotificationHandlers()
     await this.mcpClient.close()
   }
 }

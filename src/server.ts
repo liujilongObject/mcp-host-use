@@ -8,7 +8,7 @@ const app = express()
 
 let connectionManager: MCPConnectionManager | null = null
 
-let getActiveConnections: () => Map<string, MCPClient>
+let getActiveMcpConnections: () => Map<string, MCPClient>
 
 // 添加服务器安装锁
 const serverInstallLocks = new Map<string, Promise<any>>()
@@ -62,7 +62,7 @@ app.get(
     await connectionManager?.refreshConnections()
 
     const promises = []
-    for (const [server_name, client] of getActiveConnections().entries()) {
+    for (const [server_name, client] of getActiveMcpConnections().entries()) {
       promises.push(
         withTimeoutPromise(
           client.listTools().then((tools) => ({
@@ -107,7 +107,7 @@ app.post(
 
     // 并行处理所有服务器连接
     const connectionPromises = server_names.map(async (server_name) => {
-      let client = getActiveConnections().get(server_name)
+      let client = getActiveMcpConnections().get(server_name)
 
       // 已有连接，直接复用
       if (client) {
@@ -191,8 +191,8 @@ app.post(
   '/api/tools/toolCall',
   errorHandler(async (req: Request, res: Response) => {
     const { server_name, tool_name, tool_args } = req.body
-    const thatClient = getActiveConnections().get(server_name)!
-    const result = await thatClient.callTool(tool_name, tool_args)
+    const thatClient = getActiveMcpConnections().get(server_name)!
+    const result = await thatClient.callToolWithReconnect(tool_name, tool_args)
 
     res.json({
       code: 0,
@@ -206,7 +206,7 @@ app.get(
   '/api/resources',
   errorHandler(async (req: Request, res: Response) => {
     const resourcesOfServers = []
-    for (const [server_name, client] of getActiveConnections().entries()) {
+    for (const [server_name, client] of getActiveMcpConnections().entries()) {
       const resources = await client.listResources()
       resourcesOfServers.push({
         server_name,
@@ -226,7 +226,7 @@ app.post(
   '/api/resources/read',
   errorHandler(async (req: Request, res: Response) => {
     const { server_name, resource_uri } = req.body
-    const thatClient = getActiveConnections().get(server_name)!
+    const thatClient = getActiveMcpConnections().get(server_name)!
     const result = await thatClient.readResource(resource_uri)
 
     res.json({
@@ -267,7 +267,7 @@ app.post(
     // 并行处理每个服务器的安装
     const installPromises = serverNameList.map(async (server_name) => {
       // 检查服务器是否已存在连接
-      const existingClient = getActiveConnections().get(server_name)
+      const existingClient = getActiveMcpConnections().get(server_name)
       if (existingClient) {
         return {
           server_name,
@@ -358,7 +358,7 @@ app.post(
       })
     }
 
-    const existingClient = getActiveConnections().get(server_name)
+    const existingClient = getActiveMcpConnections().get(server_name)
     if (!existingClient) {
       return res.json({
         code: 1,
@@ -387,7 +387,7 @@ const PORT = 17925
 
 export function createHostServer(manager: MCPConnectionManager) {
   connectionManager = manager
-  getActiveConnections = () => manager.getAllConnections()
+  getActiveMcpConnections = () => manager.getAllConnections()
 
   return new Promise<void>((resolve) => {
     app
