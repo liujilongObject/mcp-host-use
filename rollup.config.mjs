@@ -22,7 +22,11 @@ export default defineConfig([
       },
     ],
     plugins: [
-      nodeResolve({ extensions }),
+      nodeResolve({
+        extensions,
+        // https://github.com/rollup/plugins/blob/master/packages/node-resolve/README.md#exportconditions
+        exportConditions: ['node', 'import'], // 支持第三方依赖使用 'node' 条件导出
+      }),
       commonjs(),
       typescript({
         tsconfig: './tsconfig.json',

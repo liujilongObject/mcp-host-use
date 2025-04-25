@@ -162,7 +162,11 @@ export class MCPClient {
     }
   }
 
-  async connectToServer() {
+  /**
+   * @description 连接到服务器
+   * @param options 连接配置
+   */
+  async connectToServer(options?: RequestOptions) {
     // 最大重试次数
     const maxRetries = 3
     // 重试间隔（毫秒）
@@ -184,7 +188,12 @@ export class MCPClient {
         }
 
         this.transport = this.createTransport()
-        const connectPromise = this.mcpClient.connect(this.transport)
+        // 初始化连接
+        const connectOptions: RequestOptions = {
+          ...(options ?? {}),
+          timeout: options?.timeout || 5 * 60 * 1000,
+        }
+        const connectPromise = this.mcpClient.connect(this.transport, connectOptions)
 
         // HACK:必须在此处监听 stderr 输出
         // (connect 初始化后，transport 被赋值; connectPromise 执行后，transport 被重置为 undefined)
@@ -290,13 +299,14 @@ export class MCPClient {
 
   /**
    * @description 重新连接服务器
+   * @param options 连接配置
    */
-  async reconnect() {
+  async reconnect(options?: RequestOptions) {
     try {
       // 清理现有连接
       await this.cleanup()
       // 重新连接服务器
-      await this.connectToServer()
+      await this.connectToServer(options)
       console.log('[MCP Client] 重新连接服务器成功')
       return true
     } catch (error) {
