@@ -4,7 +4,7 @@
 
 # mcp-host-use
 
-### mcp-host-use is a Node.js-based Model Context Protocol (MCP) host application for connecting and managing multiple MCP servers. The Host provides a unified interface that allows clients to interact with multiple MCP servers through HTTP APIs, accessing and invoking tools (or resources). You can use it to quickly test and run your MCP Servers.
+**mcp-host-use is a Node.js-based Model Context Protocol (MCP) host application for connecting and managing multiple MCP servers. The Host provides a unified interface that allows clients to interact with multiple MCP servers through HTTP APIs, accessing and invoking tools (or resources). You can use it to quickly test and run your MCP Servers.**
 
 ## Architecture Diagram
 

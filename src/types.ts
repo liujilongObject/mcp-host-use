@@ -1,3 +1,5 @@
+import { IOType } from 'node:child_process'
+
 export interface MCPClientConfig {
   /** 传输协议类型：stdio | sse */
   transportType: 'stdio' | 'sse'
@@ -9,6 +11,7 @@ export interface MCPClientConfig {
     env?: Record<string, string>
     cwd?: string
     sseUrl?: string
+    stderr?: IOType
   }
 }
 
@@ -21,6 +24,7 @@ export interface MCPServerConfig {
   args?: string[]
   env?: Record<string, string>
   cwd?: string
+  stderr?: IOType
   sse_url?: string
 }
 

@@ -145,6 +145,7 @@ export class MCPClient {
           args: this.clientConfig.serverConfig.args || [],
           env: this.clientConfig.serverConfig.env || undefined,
           cwd: this.clientConfig.serverConfig.cwd || undefined,
+          stderr: this.clientConfig.serverConfig.stderr ?? 'pipe',
         })
       case 'sse':
         if (

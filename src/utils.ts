@@ -12,6 +12,7 @@ export function convertToClientConfig(serverConfig: MCPServerConfig): MCPClientC
       args: serverConfig.args,
       env: serverConfig.env,
       cwd: serverConfig.cwd,
+      stderr: serverConfig.stderr,
       sseUrl: serverConfig.sse_url,
     },
   }
