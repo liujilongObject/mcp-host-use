@@ -1,3 +1,14 @@
+// 查询工具
+fetch('http://localhost:17925/api/tools/batch', {
+    method: 'Post',
+    headers: {
+        "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+        server_names: ['server-everything-streamableHttp']
+    })
+}).then(res => res.json()).then(res => console.log(res))
+
 // 调用工具
 fetch('http://localhost:17925/api/tools/toolCall', {
     method: 'Post',

@@ -16,14 +16,14 @@ graph TD
     ConnectionManager -->|创建/管理| MCPClient1[MCP 客户端 1]
     ConnectionManager -->|创建/管理| MCPClient2[MCP 客户端 2]
     ConnectionManager -->|创建/管理| MCPClientN[MCP 客户端 N]
-    MCPClient1 -->|STDIO/SSE| MCPServer1[MCP 服务器 1]
-    MCPClient2 -->|STDIO/SSE| MCPServer2[MCP 服务器 2]
-    MCPClientN -->|STDIO/SSE| MCPServerN[MCP 服务器 N]
+    MCPClient1 -->|STDIO/SSE/StreamableHTTP| MCPServer1[MCP 服务器 1]
+    MCPClient2 -->|STDIO/SSE/StreamableHTTP| MCPServer2[MCP 服务器 2]
+    MCPClientN -->|STDIO/SSE/StreamableHTTP| MCPServerN[MCP 服务器 N]
 ```
 
 ## 主要功能
 - 支持同时连接多个 MCP 服务器, 通过 `json` 文件管理多个 MCP 服务器
-- 支持 STDIO 和 SSE 两种传输方式
+- 支持 `STDIO|SSE|StreamableHTTP` 多种传输方式
 - 提供统一的 HTTP API 接口，用于：
     - 获取所有服务器的工具列表
     - 调用特定服务器上的工具
@@ -81,7 +81,7 @@ mcp-host-use/
     "mcp_servers": [
         {
             "enabled": true, // 是否启用 server
-            "type": "stdio", // 'stdio' | 'sse'
+            "type": "stdio", // 'stdio' | 'sse' | 'streamableHttp'
             "server_name": "server-puppeteer", // 自定义 name
             "command": "npx",
             "args": [
@@ -119,7 +119,7 @@ mcp-host-use/
 - 对于 STDIO 传输方式，需要确保以下命令可执行
     - `npx`
     - `uvx`
-- 对于 SSE 传输方式，需要确保 URL 可访问
+- 对于 SSE|StreamableHTTP 传输方式，需要确保 URL 可访问
 
 
 ## API Endpoints

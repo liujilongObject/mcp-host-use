@@ -14,6 +14,8 @@ export function convertToClientConfig(serverConfig: MCPServerConfig): MCPClientC
       cwd: serverConfig.cwd,
       stderr: serverConfig.stderr,
       sseUrl: serverConfig.sse_url,
+      streamableHttpUrl: serverConfig.streamable_http_url,
+      httpHeaders: serverConfig.http_headers,
     },
   }
 }

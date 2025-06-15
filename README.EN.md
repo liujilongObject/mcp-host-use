@@ -15,14 +15,14 @@ graph TD
     ConnectionManager -->|Create/Manage| MCPClient1[MCP Client 1]
     ConnectionManager -->|Create/Manage| MCPClient2[MCP Client 2]
     ConnectionManager -->|Create/Manage| MCPClientN[MCP Client N]
-    MCPClient1 -->|STDIO/SSE| MCPServer1[MCP Server 1]
-    MCPClient2 -->|STDIO/SSE| MCPServer2[MCP Server 2]
-    MCPClientN -->|STDIO/SSE| MCPServerN[MCP Server N]
+    MCPClient1 -->|STDIO/SSE/StreamableHTTP| MCPServer1[MCP Server 1]
+    MCPClient2 -->|STDIO/SSE/StreamableHTTP| MCPServer2[MCP Server 2]
+    MCPClientN -->|STDIO/SSE/StreamableHTTP| MCPServerN[MCP Server N]
 ```
 
 ## Key Features
 - Support for connecting multiple MCP servers simultaneously, managed through a `json` file
-- Support for both STDIO and SSE transport methods
+- Support for both STDIO, SSE, StreamableHTTP transport methods
 - Provides unified HTTP API interfaces for:
     - Retrieving tool lists from all servers
     - Invoking tools on specific servers
@@ -76,7 +76,7 @@ mcp-host-use/
     "mcp_servers": [
         {
             "enabled": true, // Whether to enable the server
-            "type": "stdio", // 'stdio' | 'sse'
+            "type": "stdio", // 'stdio' | 'sse' | 'streamableHttp'
             "server_name": "server-puppeteer", // Custom name
             "command": "npx",
             "args": [
@@ -113,7 +113,7 @@ mcp-host-use/
 - For STDIO transport method, ensure the following commands are executable:
     - `npx`
     - `uvx`
-- For SSE transport method, ensure the URL is accessible
+- For SSE and StreamableHTTP transport method, ensure the URL is accessible
 
 ## API Endpoints
 

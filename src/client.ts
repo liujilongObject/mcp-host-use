@@ -1,15 +1,18 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { Resource, McpError, CallToolRequest } from '@modelcontextprotocol/sdk/types.js'
 import type { RequestOptions } from '@modelcontextprotocol/sdk/shared/protocol.js'
 import { MCPClientConfig } from './types.js'
 import { z } from 'zod'
 import { getSystemNpxPath, getSystemUvxPath, isWin32 } from './utils.js'
 
+type ClientTransport = StdioClientTransport | SSEClientTransport | StreamableHTTPClientTransport
+
 export class MCPClient {
   private mcpClient: Client
-  private transport: StdioClientTransport | SSEClientTransport | null = null
+  private transport: ClientTransport | null = null
   private clientConfig: MCPClientConfig
 
   private notificationHandlers: Map<string, Function> = new Map()
@@ -123,17 +126,17 @@ export class MCPClient {
     }
   }
 
-  // 是否为 SSE URL
-  private isSSEUrl(url: string): boolean {
+  // 是否为合法的 http/https URL
+  private isHttpUrl(url: string): boolean {
     try {
       new URL(url)
-      return url.startsWith('http://') || url.startsWith('https://')
+      return /^https?:\/\//.test(url)
     } catch {
       return false
     }
   }
 
-  private createTransport(): StdioClientTransport | SSEClientTransport {
+  private createTransport(): ClientTransport {
     switch (this.clientConfig.transportType) {
       case 'stdio':
         if (!this.clientConfig.serverConfig.command) {
@@ -150,12 +153,32 @@ export class MCPClient {
       case 'sse':
         if (
           !this.clientConfig.serverConfig.sseUrl ||
-          !this.isSSEUrl(this.clientConfig.serverConfig.sseUrl)
+          !this.isHttpUrl(this.clientConfig.serverConfig.sseUrl)
         ) {
           throw new Error('[MCP Client] invalid SSE URL')
         }
 
-        return new SSEClientTransport(new URL(this.clientConfig.serverConfig.sseUrl))
+        return new SSEClientTransport(new URL(this.clientConfig.serverConfig.sseUrl), {
+          requestInit: {
+            headers: this.clientConfig.serverConfig.httpHeaders,
+          },
+        })
+      case 'streamableHttp':
+        if (
+          !this.clientConfig.serverConfig.streamableHttpUrl ||
+          !this.isHttpUrl(this.clientConfig.serverConfig.streamableHttpUrl)
+        ) {
+          throw new Error('[MCP Client] invalid StreamableHTTP URL')
+        }
+
+        return new StreamableHTTPClientTransport(
+          new URL(this.clientConfig.serverConfig.streamableHttpUrl),
+          {
+            requestInit: {
+              headers: this.clientConfig.serverConfig.httpHeaders,
+            },
+          }
+        )
       default:
         throw new Error(
           `[MCP Client] Unsupported transport type: ${this.clientConfig.transportType}`

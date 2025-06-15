@@ -36,6 +36,12 @@
             "sse_url": "http://localhost:3001/sse"
         },
         {
+            "enabled": true,
+            "type": "streamableHttp",
+            "server_name": "server-everything-streamableHttp",
+            "streamable_http_url": "http://localhost:3001/mcp"
+        },
+        {
             "enabled": false,
             "type": "stdio",
             "server_name": "github",
